@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package>
+  <name>usb_can_test_node</name>
+  <version>0.0.3</version>
+  <description>A catkin version of driver for dunkermotoren motor</description>
+
+  <maintainer email="Samuel.xu1988@gmail.com">Mitchell Wills</maintainer>
+  <author>Shengdong Xu</author>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  
+  <build_depend>roscpp</build_depend>
+  <run_depend>roscpp</run_depend>
+
+  <export>
+  </export>
+</package>
