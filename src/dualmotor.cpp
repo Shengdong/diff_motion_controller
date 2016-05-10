@@ -1,8 +1,9 @@
 #include "dualmotor.h"
 
-dualmotor::dualmotor(int id_1, int id_2)
- : m_id_1(id_1),
-   m_id_2(id_2)
+dualmotor::dualmotor(int id_1, int id_2, int typeData)
+ : m_id_1(id_1)
+ , m_id_2(id_2)
+ , m_typeData(typeData)
 {
     CAN_SendData[0].DataLen = 8;
     CAN_SendData[0].ExternFlag = 0;
@@ -18,11 +19,20 @@ dualmotor::dualmotor(int id_1, int id_2)
     VEL_DATA[1].ExternFlag = 0;
     VEL_DATA[0].RemoteFlag = 0;
     VEL_DATA[1].RemoteFlag = 0;
-
-    CAN_SendData[0].SendType = 0;
-    CAN_SendData[1].SendType = 0;
-    VEL_DATA[0].SendType = 0;
-    VEL_DATA[1].SendType = 0;
+    if (m_typeData)
+    {
+        CAN_SendData[0].SendType = 2;
+        CAN_SendData[1].SendType = 2;
+        VEL_DATA[0].SendType = 2;
+        VEL_DATA[1].SendType = 2;
+    }
+    else
+    {
+        CAN_SendData[0].SendType = 0;
+        CAN_SendData[1].SendType = 0;
+        VEL_DATA[0].SendType = 0;
+        VEL_DATA[1].SendType = 0;
+    }
 
     Send_Data(0x3000, 0x00, 0x0001, 0x0000);
     Read_Callback_Data();
@@ -59,7 +69,9 @@ dualmotor::Read_Callback_Data(void)
        DataNum = VCI_GetReceiveNum(VCI_USBCAN2, 0, 0);
        if((DataNum > 0)&&(VEL_REC != NULL))
        {
-           int ReadDataNum = VCI_Receive(VCI_USBCAN2, 0, 0, VEL_REC, DataNum);
+           VCI_Receive(VCI_USBCAN2, 0, 0, VEL_REC, DataNum);
+           //int ReadDataNum = VCI_Receive(VCI_USBCAN2, 0, 0, VEL_REC, DataNum);
+/*
            for(int i= 0; i<ReadDataNum; i++)
            {
                printf("--CAN_ReceiveData.ID = 0x%X\n",VEL_REC[i].ID);
@@ -70,6 +82,7 @@ dualmotor::Read_Callback_Data(void)
                }
                printf("\n");
           }
+*/
        }
    }
 }
@@ -185,6 +198,7 @@ dualmotor::get_vel(void)
            int ReadDataNum = VCI_Receive(VCI_USBCAN2, 0, 0, VEL_REC, DataNum); 
            for(int i=0; i< ReadDataNum; i++)
            {
+/*
                printf("--CAN_ReceiveData.ID = 0x%X\n", VEL_REC[i].ID);
                printf("--CAN_ReceiveData.Data:");
                for(int j=0;j<VEL_REC[i].DataLen;j++)
@@ -192,7 +206,7 @@ dualmotor::get_vel(void)
                    printf("%02X ",VEL_REC[i].Data[j]);
                }
                printf("\n");
-
+*/
                int Vel;
 
                if (VEL_REC[i].Data[7] == 0x00)
@@ -203,6 +217,10 @@ dualmotor::get_vel(void)
                {   
                    Vel = (VEL_REC[i].Data[4]) | (VEL_REC[i].Data[5] << 8);
                    Vel = Vel - 0xFFFF - 1;
+               }
+               else
+               {
+                   Vel =0;
                }
                if (VEL_REC[i].ID == 0x5BF)
                {

@@ -10,7 +10,7 @@
 class dualmotor
 {
 public:
-    explicit dualmotor(int id_1, int id_2);
+    explicit dualmotor(int id_1, int id_2, int typeData);
 
     void Read_Callback_Data(void);
 
@@ -30,6 +30,7 @@ public:
 private:
     int m_id_1;
     int m_id_2;
+    int m_typeData;
     std::pair <int, int> m_vel;
     VCI_CAN_OBJ CAN_SendData[2];
     VCI_CAN_OBJ VEL_DATA[2];

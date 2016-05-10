@@ -3,7 +3,7 @@
 class pcan_device
 {
 public:
-    explicit pcan_device(int id);
+    explicit pcan_device(int id, int type);
 
     bool scan_device(void);
  
@@ -22,5 +22,6 @@ public:
 private:
     int m_status;
     int m_id;
-
+    int m_deviceIndex;
+    int m_type;
 };
