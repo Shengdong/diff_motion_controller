@@ -34,6 +34,7 @@ dualmotor::dualmotor(int id_1, int id_2, int typeData)
         VEL_DATA[1].SendType = 0;
     }
 
+    sleep(0.5);
     Send_Data(0x3000, 0x00, 0x0001, 0x0000);
     Read_Callback_Data();
 
@@ -240,7 +241,7 @@ void dualmotor::power_on(void)
 {
     Send_Data(0x3004, 0x00, 0x0001, 0x0000);
     Read_Callback_Data();
-    sleep(0.5);
+    sleep(1);
 }
 
 void dualmotor::slow_down(void)

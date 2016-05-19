@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>usb_can_node</name>
+  <name>motion_controller</name>
   <version>0.0.3</version>
   <description>A catkin version of driver for dunkermotoren motor</description>
 
