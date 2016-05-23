@@ -19,6 +19,8 @@ public:
  
     void close_device(void);
 
+    int device_index(void);
+
 private:
     int m_status;
     int m_id;

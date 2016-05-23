@@ -46,14 +46,12 @@ pcan_device::init_device(void)
     VCI_INIT_CONFIG_EX CAN_InitEx;
     //Config device
     CAN_InitEx.CAN_ABOM = 0;
-//#if CAN_MODE_LOOP_BACK
+
     if (m_type)
         CAN_InitEx.CAN_Mode = 1;
     else
         CAN_InitEx.CAN_Mode = 0;
-//#else
-//    CAN_InitEx.CAN_Mode = 0;
-//#endif
+
     //1Mbps
     CAN_InitEx.CAN_BRP = 36;//6;
     CAN_InitEx.CAN_BS1 = 6;//3;
@@ -125,4 +123,10 @@ pcan_device::close_device(void)
     //Stop receive can data
     VCI_CloseDevice(VCI_USBCAN2,m_deviceIndex);
     printf("VCI_CloseDevice\n");    
+}
+
+int
+pcan_device::device_index(void)
+{
+    return m_deviceIndex;
 }

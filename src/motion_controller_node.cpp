@@ -16,8 +16,8 @@ int main(int argc, char** argv)
        ros::spinOnce();
     }
     
-    int count = 3500;
-    while(count--)
+    int count = 20000;
+    while(count--&&!controller.reachgoal())
     {
        controller.running();
        ros::spinOnce();

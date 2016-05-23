@@ -16,7 +16,7 @@ class motion_controller
     motion_controller(void);
     bool init(ros::NodeHandle& nh);
     void running(void);
-
+    bool reachgoal(void);
     void close(void);
     void shutdown(void);
 
@@ -42,7 +42,7 @@ class motion_controller
     Eigen::Vector3d m_cmd;
 
     boost::shared_ptr<pcan_device> pcan;
-    boost::shared_ptr<dualmotor> dual_motor;
+    boost::shared_ptr<dualmotor> locomotor;
 
     ros::Publisher m_posePub;
     ros::Publisher m_diffPub;
@@ -63,20 +63,26 @@ class motion_controller
     double beta = 0;
     double v;
 
-    double p3 = 0.5;
-    double p4 = 1.5;
+    double p3 = 0.6;
+    double p4 = 1.6;
     double p5 = -0.3;
     double p_a = 0.6;
     double delta_y = 0.0;
     double delta_x = 0.0;
 
+    double frame_rate = 25;
+
     double pi = 3.141592654;
+
+    double k1 = 1.0;
+    double k2 = 3.0;
+    double gamma = 0.4;
+    double k = 0.0;
 
     std::pair <int,int> vel;
     ros::Time cycle_start;
     double cycle_period;
     double m_resolution;
     int count;
-    bool fix_turn;
-    bool fix_forward;
+    bool reached;
 };
