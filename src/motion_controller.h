@@ -56,6 +56,7 @@ class motion_controller
     Eigen::Matrix3f qToRotation(Eigen::Quaternion<float> q);
     double getYawFromMat(Eigen::Matrix3f mat);
     double mod2pi(double angle);
+    double distance2d(Eigen::Vector3d point_end, Eigen::Vector3d point_start);
 
     double gain = 0;
     double dist = 0;
@@ -63,21 +64,17 @@ class motion_controller
     double beta = 0;
     double v;
 
-    double p3 = 0.6;
-    double p4 = 1.6;
-    double p5 = -0.3;
-    double p_a = 0.6;
+    double k_dist = 0.6;
+
+    double k_angle = 0.6;
     double delta_y = 0.0;
     double delta_x = 0.0;
 
-    double frame_rate = 25;
-
-    double pi = 3.141592654;
-
     double k1 = 1.0;
-    double k2 = 3.0;
-    double gamma = 0.4;
+    double k2 = 4.0;
+    double gamma = 0.2;
     double k = 0.0;
+    double v_max = 0.63;
 
     std::pair <int,int> vel;
     ros::Time cycle_start;
