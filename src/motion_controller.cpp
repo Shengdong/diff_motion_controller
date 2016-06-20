@@ -86,8 +86,6 @@ motion_controller::init(ros::NodeHandle& nh)
     m_cmdSub = nh.subscribe<geometry_msgs::PoseStamped>("cmd_pose", 1, boost::bind(&motion_controller::cmdCallback, this, _1));
     m_absposeSub = nh.subscribe<apriltags_ros::AprilTagDetectionArray>("tag_detections", 1, boost::bind(&motion_controller::absposeCallback, this, _1));
     m_posePub = nh.advertise<geometry_msgs::PoseStamped>("pose", 1);
-//    m_diffPub = nh.advertise<geometry_msgs::Point>("diff", 1);
-    m_fbPub = nh.advertise<geometry_msgs::PointStamped>("fb", 1);
 
     int send_data_type = 0;
     
@@ -103,17 +101,16 @@ motion_controller::init(ros::NodeHandle& nh)
 
     sleep(0.2);
     m_state  << 0.0,
-                0.8,
+                0.0,
                 0.0;
-
-    m_cmd   <<  7.2,
-                0.8,
+/*
+    m_cmd   <<  3.84,
+                0.0,
                 0.0;
-
-    m_move = FORWARD;
+*/
+    m_move = IDLE;
     count =0;
-    m_resolution = 0.8;
-    reached = false;
+    m_resolution = 0.96;
     locomotor = boost::make_shared<dualmotor>(0x63F, 0x67F, dev_index, send_data_type);
     locomotor->init();
     locomotor->power_on();
@@ -145,7 +142,6 @@ motion_controller::running(void)
                 gain = boost::math::sign(gain) * 500;
             }
 
-
             if(fabs(v)>2500)
             {
                 v = boost::math::sign(v)*2500;
@@ -153,7 +149,7 @@ motion_controller::running(void)
 
             locomotor->set_vel(floor(v)+floor(gain),-floor(v)+floor(gain));
 
-            if (distance2d(m_state, m_cmd) < 0.04 && indicator(m_state[2],m_cmd[2],0.03))
+            if (distance2d(m_state, m_cmd) < 0.04 && indicator(m_state[2],m_cmd[2],0.1))
             {
                 m_move = IDLE;
             }
@@ -184,100 +180,21 @@ motion_controller::running(void)
   
         case IDLE:
         {
-            count++;
-            if (count == 1)
+            locomotor->set_vel(0,0);
+            if (distance2d(m_state, m_cmd) > 0.4)
             {
-                printf("New commanded goal received!\n");
-                m_cmd   <<  7.2,
-                            0.8,
-                            PI/2;
-                locomotor->set_vel(0,0);
-                m_move = TURN;
-                sleep(0.2);
-            }
-
-            else if(count == 2)
-            {
-                printf("New commanded goal received!\n");
-                m_cmd   <<  7.2,
-                            4.0,
-                            PI/2;
-                locomotor->set_vel(0,0);
                 m_move = FORWARD;
-                sleep(0.2);
             }
-
-            else if(count == 3)
+            else if(!indicator(m_state[2],m_cmd[2],0.4))
             {
-                printf("New commanded goal received!\n");
-                m_cmd   <<  7.2,
-                            4.0,
-                            PI;
-                locomotor->set_vel(0,0);
                 m_move = TURN;
-                sleep(0.2);
             }
-
-            else if(count == 4)
-            {
-                printf("New commanded goal received!\n");
-                m_cmd   <<  0.0,
-                            4.0,
-                            PI;
-                locomotor->set_vel(0,0);
-                m_move = FORWARD;
-                sleep(0.2);
-            }
-
-            else if(count == 5)
-            {
-                printf("New commanded goal received!\n");
-                m_cmd   <<  0.0,
-                            4.0,
-                            -PI/2;
-                locomotor->set_vel(0,0);
-                m_move = TURN;
-                sleep(0.2);
-            }
-
-            else if(count == 6)
-            {
-                printf("New commanded goal received!\n");
-                m_cmd   <<  0.0,
-                            0.8,
-                            -PI/2;
-                locomotor->set_vel(0,0);
-                m_move = FORWARD;
-                sleep(0.2);
-            }
-
-            else if(count == 7)
-            {
-                printf("New commanded goal received!\n");
-                m_cmd   <<  0.0,
-                            0.8,
-                            0.0;
-                locomotor->set_vel(0,0);
-                m_move = TURN;
-                sleep(0.2);
-            }
-
-            else if(count == 8)
-            {
-                printf("Reached Goal!\n");
-                locomotor->set_vel(0,0);
-                m_move = IDLE;
-                reached = true;
-                sleep(0.2);
-            }
-
             else
             {
-                locomotor->set_vel(0,0);
                 m_move = IDLE;
-                reached =true;
-                sleep(0.05);
             }
+            sleep(0.01);
+
             break;
         }
     }
@@ -295,9 +212,7 @@ motion_controller::running(void)
     if (abs_pose)
     {
         int id;
-        id = abs_pose->id;
-
-//        printf("Time lag is %f\n", (ros::Time::now() - abs_pose->pose.header.stamp).toSec());
+        id = abs_pose->id - 535;
 
         Eigen::Quaternion<float> quat;
         quat.w() = abs_pose->pose.pose.orientation.w;
@@ -326,13 +241,6 @@ motion_controller::running(void)
         m_state[1] = translation[1] + m_resolution * floor(id/10.0);
         m_state[2] = getYawFromMat(Rotation);
     }
-/*
-    geometry_msgs::Point diff_msgs;
-    diff_msgs.x = vel.first;
-    diff_msgs.y = vel.second;
-    diff_msgs.z = vel.first+vel.second;
-    m_diffPub.publish(diff_msgs);
-*/
     geometry_msgs::PoseStamped pose_msg;
          
     pose_msg.header.frame_id = "world";
@@ -360,7 +268,6 @@ motion_controller::running(void)
         delta_x = boost::math::sign(m_cmd[0]-m_state[0]) * 1.6;
     }
 
-
     beta = angle(m_cmd[2], atan2(delta_y, delta_x));
 
     alpha = mod2pi(-beta - m_state[2]+m_cmd[2]);
@@ -368,17 +275,6 @@ motion_controller::running(void)
     dist = sqrt(delta_x*delta_x + delta_y* delta_y);
 
     k = -1/dist * (k2*(-alpha-atan(-k1*beta)) + sin(-alpha)*(1 + k1/(1+(k1*beta) * (k1*beta))));
-
-
-    geometry_msgs::PointStamped fb_msgs;
-    fb_msgs.header.frame_id = "world";
-    fb_msgs.header.stamp = ros::Time::now();
-
-    fb_msgs.point.x = alpha;
-    fb_msgs.point.y = beta;
-    fb_msgs.point.z = dist;
-    m_fbPub.publish(fb_msgs);
-
 }
 
 void 
@@ -395,8 +291,10 @@ motion_controller::close(void)
     pcan->close_device();
 }
 
+/*
 bool
 motion_controller::reachgoal(void)
 {
     return reached;
 }
+*/

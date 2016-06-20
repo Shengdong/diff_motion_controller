@@ -4,7 +4,7 @@
   <version>0.0.3</version>
   <description>A catkin version of driver for dunkermotoren motor</description>
 
-  <maintainer email="Samuel.xu1988@gmail.com">Mitchell Wills</maintainer>
+  <maintainer email="Samuel.xu1988@gmail.com">Shengdong Xu</maintainer>
   <author>Shengdong Xu</author>
 
   <license>BSD</license>

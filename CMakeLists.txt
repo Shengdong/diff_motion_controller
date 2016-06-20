@@ -40,6 +40,7 @@ include_directories(
 
 add_library(motion_controller
             src/dualmotor.cpp
+            src/singlemotor.cpp
             src/usb_can_device.cpp
             src/motion_controller.cpp
 )
