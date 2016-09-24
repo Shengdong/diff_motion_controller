@@ -41,6 +41,13 @@ dualmotor::dualmotor(int id_1, int id_2, int dev_index, int typeData)
     }
 }
 
+void 
+dualmotor::free_mode(void)
+{
+    Send_Data(0x3000, 0x00, 0x0000, 0x0000);
+    Read_Callback_Data();
+}
+
 void
 dualmotor::init(void)
 {
@@ -240,7 +247,6 @@ void dualmotor::power_on(void)
 void dualmotor::slow_down(void)
 {
     set_vel(0,0);
-    Read_Callback_Data();
     sleep(3); 
 }
 

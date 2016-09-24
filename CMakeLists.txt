@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
              cmake_modules
              roscpp
              geometry_msgs
+             nav_msgs
              std_msgs
 )
 
@@ -24,8 +25,8 @@ add_definitions("-std=c++11 -Wall")
 
 catkin_package(
   INCLUDE_DIRS
-  LIBRARIES usb_can_test
-  CATKIN_DEPENDS apriltags_ros roscpp geometry_msgs std_msgs message_runtime
+  LIBRARIES motion_controller
+  CATKIN_DEPENDS apriltags_ros roscpp geometry_msgs nav_msgs std_msgs message_runtime
   DEPENDS Eigen3 BOOST
 )
 
@@ -42,6 +43,7 @@ add_library(motion_controller
             src/dualmotor.cpp
             src/singlemotor.cpp
             src/usb_can_device.cpp
+            src/usb_gpio_device.cpp
             src/motion_controller.cpp
 )
 

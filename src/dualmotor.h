@@ -25,6 +25,8 @@ public:
     void slow_down(void);
 
     void shut_down(void);
+
+    void free_mode(void);
 private:
     int m_id_1;
     int m_id_2;

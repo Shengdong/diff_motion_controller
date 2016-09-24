@@ -15,7 +15,7 @@ pcan_device::scan_device(void)
     DevNum = VCI_ScanDevice(m_id);
     if(DevNum > 0)
     {
-        m_deviceIndex = DevNum - 1;
+        m_deviceIndex = 0;
 
         printf("Have %d device connected!\n",DevNum);
         return true;

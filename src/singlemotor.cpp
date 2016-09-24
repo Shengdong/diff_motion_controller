@@ -74,6 +74,7 @@ singlemotor::Read_Callback_Data(void)
        if((m_DataNum > 0)&&(pCAN_ReceiveData != NULL))
        {
            m_ReadDataNum = VCI_Receive(VCI_USBCAN2,dev_n, 0, pCAN_ReceiveData, m_DataNum);
+/*
            for(int i= 0; i<m_ReadDataNum; i++)
            {
                printf("--CAN_ReceiveData.ID = 0x%X\n",pCAN_ReceiveData->ID);
@@ -84,6 +85,7 @@ singlemotor::Read_Callback_Data(void)
                }
                printf("\n");
            }
+*/
        }
    }
 }
@@ -237,6 +239,7 @@ singlemotor::get_pos(void)
            m_ReadDataNum = VCI_Receive(VCI_USBCAN2,dev_n, 0, pCAN_ReceiveData, m_DataNum); 
            for(int i=0; i< m_ReadDataNum; i++)
            {
+/*
                printf("--CAN_ReceiveData.ID = 0x%X\n", pCAN_ReceiveData->ID);
                printf("--CAN_ReceiveData.Data:");
                for(int j=0;j<pCAN_ReceiveData->DataLen;j++)
@@ -244,7 +247,7 @@ singlemotor::get_pos(void)
                    printf("%02X ",pCAN_ReceiveData->Data[j]);
                }
                printf("\n");
-
+*/
                int Pos;
 
                if ( (pCAN_ReceiveData->Data[7]&&0x01) == 0x00)
@@ -279,7 +282,6 @@ void singlemotor::power_on(void)
 void singlemotor::slow_down(void)
 {
     set_vel(0);
-    Read_Callback_Data();
     sleep(3); 
 }
 
