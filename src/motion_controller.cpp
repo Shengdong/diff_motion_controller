@@ -87,12 +87,26 @@ motion_controller::absposeCallback(const apriltags_ros::AprilTagDetectionArray::
     }
 }
 
+void 
+motion_controller::absposeCallback1(const apriltags_ros::AprilTagDetectionArray::ConstPtr& msg)
+{
+    if(msg->detections.size())
+    {   
+        abs_pose1 = boost::make_shared<const apriltags_ros::AprilTagDetection>(msg->detections[0]);
+    }
+    else
+    {
+        abs_pose1 = NULL;
+    }
+}
+
 bool 
 motion_controller::init(ros::NodeHandle& nh)
 {
 //  initialise the ros publisher and subscriber
     m_pathSub = nh.subscribe<nav_msgs::Path>("path", 1, boost::bind(&motion_controller::pathCallback, this, _1));
-    m_absposeSub = nh.subscribe<apriltags_ros::AprilTagDetectionArray>("tag_detections", 1, boost::bind(&motion_controller::absposeCallback, this, _1));
+    m_absposeSub  = nh.subscribe<apriltags_ros::AprilTagDetectionArray>("tag_detections", 1, boost::bind(&motion_controller::absposeCallback, this, _1));
+    m_absposeSub1 = nh.subscribe<apriltags_ros::AprilTagDetectionArray>("tag_detections1", 1, boost::bind(&motion_controller::absposeCallback1, this, _1));
     m_posePub = nh.advertise<geometry_msgs::PoseStamped>("pose", 1);
 
     int send_data_type = 0;
@@ -140,43 +154,6 @@ motion_controller::init(ros::NodeHandle& nh)
     block_path_receiver = false;
     count =0;
     m_resolution = 0.96;
-
-    lift_motor = boost::make_shared<singlemotor>(0x61F, dev_index,send_data_type);
-    gpio->reset_pin(4);
-    lift_motor->reset_pos();
-    lift_motor->set_vel(1000);
-    lift_motor->power_on();
-    sleep(1);
-/*
-    //  if you find the linear module slide is down side the position sensor, move it up first
-    lift_motor->set_pos(-143360);
-    sleep(3);
-*/
-
-//  move up a little bit if position sensor sense the slide
-    if (gpio->read_data(4))
-    {
-       lift_motor->set_pos(-143360);
-       sleep(2);
-    }
-
-//  move down until the position sensor sense the slide
-    lift_motor->set_pos(443360);
-
-    while(!gpio->read_data(4))
-    {
-        usleep(10000);
-    }
-
-//  set the initial position, 28672 is equal to 23 mm
-    int pose;
-    pose = lift_motor->get_pos()- 28672;
-    lift_motor->set_pos(pose);
-    sleep(4);
-    lift_motor->reset_pos();
-    lift_motor->shut_down();
-    sleep(1);
-
 
 //  telefork motor initial process
     telefork_motor = boost::make_shared<singlemotor>(0x65F, dev_index,send_data_type);
@@ -247,24 +224,47 @@ motion_controller::init(ros::NodeHandle& nh)
 
         telefork_motor->reset_pos();
     }
-    
-//  telefork stroke test can be added here  286720 = 1 round = 515.22mm?
-/*
-    telefork_motor->set_pos(286720);
-    sleep(10);
-    ros::shutdown();
-*/
 
-//  locomotion motor free mode can be active here
-/*
-    locomotor->free_mode();
-    locomotor->power_on();
-    sleep(20);
-    locomotor->shut_down();
-    ros::shutdown();
-*/
+
+    lift_motor = boost::make_shared<singlemotor>(0x61F, dev_index,send_data_type);
+    gpio->reset_pin(4);
+    lift_motor->reset_pos();
+    lift_motor->set_vel(1000);
+    lift_motor->power_on();
+    sleep(1);
+
+    //  if you find the linear module slide is down side the position sensor, move it up first
+    lift_motor->set_pos(-83360);
+    sleep(5);
+
+
+//  move up a little bit if position sensor sense the slide
+    if (gpio->read_data(4))
+    {
+       lift_motor->set_pos(-143360);
+       sleep(2);
+    }
+
+//  move down until the position sensor sense the slide
+    lift_motor->set_pos(443360);
+
+    while(!gpio->read_data(4))
+    {
+        usleep(10000);
+    }
+
+//  set the initial position, 28672 is equal to 23 mm
+    int pose;
+    pose = lift_motor->get_pos()- 28672;
+    lift_motor->set_pos(pose);
+    sleep(4);
+    lift_motor->reset_pos();
+    lift_motor->shut_down();
+    sleep(1);
+
 
     locomotor = boost::make_shared<dualmotor>(0x63F, 0x67F, dev_index, send_data_type);
+
     locomotor->init();
     locomotor->power_on();
  
@@ -319,9 +319,9 @@ motion_controller::running(void)
             v =  sqrt(dist)*v_max/(1 + gamma*k*k)*10000/PI;
 
             gain = 0.3265*v*k;
-            if (fabs(gain) > 500)
+            if (fabs(gain) > 600)
             {
-                gain = boost::math::sign(gain) * 500;
+                gain = boost::math::sign(gain) * 600;
             }
 
             if(fabs(v)>2000)
@@ -332,7 +332,7 @@ motion_controller::running(void)
             locomotor->set_vel(floor(v)+floor(gain),-floor(v)+floor(gain));
 
             // when the euler distance is less than 100mm, achieved waypoint
-            if (distance2d(m_state, m_cmd) < 0.1 && indicator(m_state[2],m_cmd[2],0.1))
+            if (distance2d(m_state, m_cmd) < 0.09 && indicator(m_state[2],m_cmd[2],0.5))
             {
                 m_move = IDLE;
             }
@@ -345,9 +345,9 @@ motion_controller::running(void)
 
             gain = 0.3265*v*k_back;
 
-            if (fabs(gain) > 500)
+            if (fabs(gain) > 600)
             {
-                gain = boost::math::sign(gain) * 500;
+                gain = boost::math::sign(gain) * 600;
             }
 
             if(fabs(v)>2000)
@@ -356,7 +356,7 @@ motion_controller::running(void)
             }
             
             locomotor->set_vel(-floor(v)+floor(gain),floor(v)+floor(gain));
-            if (distance2d(m_state, m_cmd) < 0.1 && indicator(m_state[2],m_cmd[2],0.1))
+            if (distance2d(m_state, m_cmd) < 0.09 && indicator(m_state[2],m_cmd[2],0.5))
             {
                 m_move = IDLE;
             }
@@ -366,66 +366,38 @@ motion_controller::running(void)
         case LIFTFORK:
         {
             // TODO: Lift height should be determined, fork stroke should be determined
+            printf("Lift and fork!\n");
+
             locomotor->set_vel(0, 0);
             sleep(3);
-            locomotor->shut_down();
+//            locomotor->shut_down();
             lift_motor->power_on();
             if ((fork_count%2) == 1)
-                lift_motor->set_pos(-306720);
+//          change -243720 to be -223720, wants to liftfork a little bit lower
+                lift_motor->set_pos(-223720);
             else
-                lift_motor->set_pos(-356720);
+                lift_motor->set_pos(-293720);
 
             sleep(10);
 
-/*
-           //test telefork camera FOV can be set here
-           if(abs_pose)
-           {
-               Eigen::Quaternion<float> quat;
-               quat.w() = abs_pose->pose.pose.orientation.w;
-               quat.x() = abs_pose->pose.pose.orientation.x;
-               quat.y() = abs_pose->pose.pose.orientation.y;
-               quat.z() = abs_pose->pose.pose.orientation.z;
-
-               Eigen::Matrix3f Rotation;
-               Eigen::Vector3f translation;
-               translation << abs_pose->pose.pose.position.x,
-                              abs_pose->pose.pose.position.y,
-                              abs_pose->pose.pose.position.z;
-
-               Rotation = qToRotation(quat);
-
-               translation = -Rotation.inverse()*translation;
-
-               float x_error;
-               float yaw_error;
- 
-               x_error   = translation(0);                  
-               yaw_error = getYawFromMat(Rotation);
-               printf("TEST: x_error is %f and yaw_error is %f", x_error, yaw_error);
-           }
-
-           sleep(20);
-           ros::shutdown();
-           exit(1);
-*/
+           printf("Start Test\n");
 
             // pose correction code inserted here  first make sure tag is attached vertically, second camera has no pitch angle relative to the vehicle
             
-/*
+
             if ((fork_count%2) == 1)
             {
+                printf("Start Correction!\n");
                 int count_detect = 0;
                 while(ros::ok())
                 {
-                    if(abs_pose)
+                    if(abs_pose1)
                     {
-
                         Eigen::Quaternion<float> quat;
-                        quat.w() = abs_pose->pose.pose.orientation.w;
-                        quat.x() = abs_pose->pose.pose.orientation.x;
-                        quat.y() = abs_pose->pose.pose.orientation.y;
-                        quat.z() = abs_pose->pose.pose.orientation.z;
+                        quat.w() = abs_pose1->pose.pose.orientation.w;
+                        quat.x() = abs_pose1->pose.pose.orientation.x;
+                        quat.y() = abs_pose1->pose.pose.orientation.y;
+                        quat.z() = abs_pose1->pose.pose.orientation.z;
 
                         Eigen::Matrix3f Rotation;
 
@@ -443,21 +415,26 @@ motion_controller::running(void)
                         yaw_error = getYawFromMat(Rotation);
                     
                         gain = -3265*(k_angle*yaw_error)/3.1415926;
-                        if(fabs(gain)>200)
+                        if(fabs(gain)>150)
                         {
-                            gain = boost::math::sign(gain) * 200;
+                            gain = boost::math::sign(gain) * 150;
                         }
                         locomotor->set_vel(floor(gain), floor(gain));
-                        if (fabs(yaw_error*180/3.1415926) < 1)
+                        if (fabs(yaw_error*180/3.1415926) < 0.5)
                         {
+                            locomotor->set_vel(0,0);
+                            printf("Yaw %f corrected!\n", yaw_error*180/3.1415926);
                             break;
                         }
                     }
                     else
                     {
+                        locomotor->set_vel(0, 0);
                         usleep(10000);
                         count_detect++;
                     }
+                    ros::spinOnce();
+
                     if (count_detect>1000)
                     {
                         ROS_WARN("No Tag detected when stoped");
@@ -466,48 +443,55 @@ motion_controller::running(void)
                     }
                 }
  
-                count = 0;
+                count_detect = 0;
                 while(ros::ok())
                 {
-                    if(abs_pose)
+                    if(abs_pose1)
                     {
 
                         Eigen::Quaternion<float> quat;
-                        quat.w() = abs_pose->pose.pose.orientation.w;
-                        quat.x() = abs_pose->pose.pose.orientation.x;
-                        quat.y() = abs_pose->pose.pose.orientation.y;
-                        quat.z() = abs_pose->pose.pose.orientation.z;
+                        quat.w() = abs_pose1->pose.pose.orientation.w;
+                        quat.x() = abs_pose1->pose.pose.orientation.x;
+                        quat.y() = abs_pose1->pose.pose.orientation.y;
+                        quat.z() = abs_pose1->pose.pose.orientation.z;
 
                         Eigen::Matrix3f Rotation;
                         Eigen::Vector3f translation;
-                        translation << abs_pose->pose.pose.position.x,
-                                       abs_pose->pose.pose.position.y,
-                                       abs_pose->pose.pose.position.z;
+                        translation << abs_pose1->pose.pose.position.x,
+                                       abs_pose1->pose.pose.position.y,
+                                       abs_pose1->pose.pose.position.z;
 
                         Rotation = qToRotation(quat);
 
-                        translation = -Rotation.inverse()*translation;
+                        translation = translation;
 
                         float x_error;
                     
                         x_error = translation[0];
                     
-                        v = -x_error*10000/3.1415926;
-                        if(fabs(x_error)>200)
+                        v = 0.25*(x_error-0.003)*10000/3.1415926;
+//                        printf("x is %f\n", x_error);
+//                        printf("v is %f\n\n", floor(v));
+                        if(fabs(v)>150)
                         {
-                            v = boost::math::sign(v) * 200;
+                            v = boost::math::sign(v) * 150;
                         }
                         locomotor->set_vel(floor(v), -floor(v));
-                        if (fabs(x_error*180/3.1415926) < 0.008)
+                        if (fabs(x_error-0.003) < 0.003)
                         {
+                            locomotor->set_vel(0, 0);
+                            printf("x %f corrected!\n", (x_error-0.006));
                             break;
                         }
                     }
                     else
                     {
+                        locomotor->set_vel(0, 0);
                         usleep(10000);
                         count_detect++;
                     }
+                    ros::spinOnce();
+
                     if (count_detect>1000)
                     {
                         ROS_WARN("No Tag detected when stoped");
@@ -515,19 +499,94 @@ motion_controller::running(void)
                         exit(1);
                     }
                 }
-*/
+            }
 
-            telefork_motor->set_pos( boost::math::sign(lift_param)*(-333900) );
+            if ((fork_count%2) == 0)
+            {
+                int count_detect = 0;
+
+                while(ros::ok())
+                {
+                    if (abs_pose)
+                    {
+                        Eigen::Quaternion<float> quat;
+                        quat.w() = abs_pose->pose.pose.orientation.w;
+                        quat.x() = abs_pose->pose.pose.orientation.x;
+                        quat.y() = abs_pose->pose.pose.orientation.y;
+                        quat.z() = abs_pose->pose.pose.orientation.z;
+
+                        Eigen::Matrix3f Rotation;
+
+                        Rotation = qToRotation(quat);
+
+                        Eigen::Matrix3f fixTF;
+                        fixTF << 1, 0,  0,
+                                 0, -1, 0,
+                                 0, 0, -1;
+
+                        Rotation = Rotation.inverse()*fixTF;
+
+                        m_state[2] = getYawFromMat(Rotation);
+                        gain = 3265*(k_angle*angle(m_cmd[2],m_state[2]))/PI;
+                        if (fabs(gain) > 100)
+                        {
+                            gain = boost::math::sign(gain) * 100;
+                        }
+                        
+                        if (fabs(gain) >100)
+                        {
+                            ros::shutdown();
+                            exit(1);
+                        }
+
+                        locomotor->set_vel(floor(gain),floor(gain));
+                        if (indicator(m_cmd[2], m_state[2], 0.008))
+                        {
+                            locomotor->set_vel(0, 0);
+                            printf("Corrected!\n");
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        locomotor->set_vel(0, 0);
+                        usleep(10000);
+                        count_detect++;
+                    }
+                    ros::spinOnce();
+
+                    if (count_detect>1000)
+                    {
+                        locomotor->set_vel(0, 0);
+                        ROS_WARN("No Tag detected when stoped");
+                        //ros::shutdown();
+                        //exit(1);
+                    }
+                }
+            }
+
+            // if we carry out hand hold barcode test, after correction, stop
+//               ros::shutdown();
+//               exit(1);
+
+            locomotor->shut_down();
+            sleep(0.5);
+
+// comment following two lines can set make telefork not strech out
+            telefork_motor->set_pos( boost::math::sign(lift_param)*(-386000) );
             sleep(15);
 
             if ((fork_count%2) == 1)
-                 lift_motor->set_pos(-356720);
+                 lift_motor->set_pos(-293720);
             else
-                 lift_motor->set_pos(-295720);
+                 lift_motor->set_pos(-223720);
             sleep(3);
-            telefork_motor->set_pos(0);
-            sleep(10);            
 
+            telefork_motor->set_pos(0);
+            sleep(15);            
+
+//            ros::shutdown();
+//            exit(1);
             lift_motor->shut_down();
             locomotor->power_on();
             sleep(0.5);
@@ -572,11 +631,20 @@ motion_controller::running(void)
                printf("Next Commanded Pose is (%f, %f, %f)\n", m_cmd[0], m_cmd[1], m_cmd[2]);
                if ( (fabs(m_cmd[0] - m_state[0])>0.5) && (fabs(m_cmd[1] - m_state[1])>0.5) )
                {
+                   printf("Invalid commanded position received!\n");
                    locomotor->shut_down();
+                   ros::shutdown();
                    exit(1);
                }
                if ( (fabs(m_cmd[0] - m_state[0])>0.5) || (fabs(m_cmd[1] - m_state[1])>0.5) )
                {
+                   if (fabs(angle(m_cmd[2],m_state[2]))>0.5)
+                   {
+                       printf("Invalid commanded pose orientation received!\n");
+                       locomotor->shut_down();
+                       ros::shutdown();
+                       exit(1);
+                   }
                    if (fabs(m_cmd[0] - m_state[0])>0.5)
                    {
                        if (cos(m_state[2]) *  (m_cmd[0] - m_state[0]) > 0)
@@ -595,20 +663,19 @@ motion_controller::running(void)
                        printf("Move Forward!\n");
                    else
                        printf("Move Backward!\n");
-                }
-                else if (fabs(m_cmd[2] - m_state[2])>0.5)
-                {
-                    m_move = TURN;
-                    printf("Turn Around!\n");
-                }
-                else if (temp_pose.pose.position.z!=0)
-                {
-                    m_move = LIFTFORK;
-                    fork_count++;
-                    lift_param = temp_pose.pose.position.z;
-                    printf("Lift and fork!\n");
-                }
-                else
+               }
+               else if (fabs(m_cmd[2] - m_state[2])>0.5)
+               {
+                   m_move = TURN;
+                   printf("Turn Around!\n");
+               }
+               else if (temp_pose.pose.position.z!=0)
+               {
+                   m_move = LIFTFORK;
+                   fork_count++;
+                   lift_param = temp_pose.pose.position.z;
+               }
+               else
                     m_move = IDLE;
                extracted_path.pop_back();
            }
@@ -689,7 +756,7 @@ motion_controller::running(void)
 
         m_state[0] = translation[0] + m_resolution * (id%10);
         m_state[1] = translation[1] + m_resolution * floor(id/10.0);
-        m_state[2] = getYawFromMat(Rotation);
+        m_state[2] = getYawFromMat(Rotation) + 0.04;
     }
 
     geometry_msgs::PoseStamped pose_msg;

@@ -36,11 +36,15 @@ class motion_controller
   private:
     void pathCallback(const nav_msgs::Path::ConstPtr& msg);
     void absposeCallback(const apriltags_ros::AprilTagDetectionArray::ConstPtr& msg);
+    void absposeCallback1(const apriltags_ros::AprilTagDetectionArray::ConstPtr& msg);
+
     ros::Subscriber m_pathSub;
     ros::Subscriber m_absposeSub;
+    ros::Subscriber m_absposeSub1;
 
     apriltags_ros::AprilTagDetectionArray tag_detections;
     apriltags_ros::AprilTagDetection::ConstPtr abs_pose;
+    apriltags_ros::AprilTagDetection::ConstPtr abs_pose1;
 
     MOVE m_move;
     Eigen::Vector3d m_state;

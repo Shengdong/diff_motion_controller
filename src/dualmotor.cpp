@@ -44,7 +44,16 @@ dualmotor::dualmotor(int id_1, int id_2, int dev_index, int typeData)
 void 
 dualmotor::free_mode(void)
 {
-    Send_Data(0x3000, 0x00, 0x0000, 0x0000);
+    Send_Data(0x3000, 0x00, 0x0001, 0x0000);
+    Read_Callback_Data();
+
+    Send_Data(0x39A0, 0x00, 0x0001, 0x0000);
+    Read_Callback_Data();
+
+    Send_Data(0x39A0, 0x18, 0x0004, 0x0000);
+    Read_Callback_Data();
+
+    Send_Data(0x39A0, 0x1A, 0x0004, 0x0000);
     Read_Callback_Data();
 }
 
@@ -67,6 +76,12 @@ dualmotor::init(void)
     Read_Callback_Data();
 
     Send_Data(0x39A0, 0x1A, 0x0004, 0x0000);
+    Read_Callback_Data();
+
+    Send_Data(0x3340, 0x00, 0x0500, 0x0000);
+    Read_Callback_Data();
+
+    Send_Data(0x3342, 0x00, 0x0500, 0x0000);
     Read_Callback_Data();
 
     Send_Data(0x3310, 0x00, 0x000C, 0x0000);
